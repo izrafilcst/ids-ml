@@ -1,0 +1,49 @@
+[project]
+name = "cicids2017-ml-ids"
+version = "0.1.0"
+description = "Classificador multiclasse de trafego malicioso (CICIDS2017)"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "scikit-learn>=1.5",
+    "xgboost>=2.1",
+    "lightgbm>=4.4",
+    "imbalanced-learn>=0.12",
+    "joblib>=1.4",
+    "optuna>=3.6",
+    "shap>=0.45",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "mlflow>=2.14",
+    "fastapi>=0.115",
+    "pydantic>=2.7",
+    "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pytest>=8.2",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
