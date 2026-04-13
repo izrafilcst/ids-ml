@@ -29,12 +29,26 @@ Foco: robustez, baixo falso positivo, bom recall em classes raras, pipeline repr
 - Modelos salvos com joblib em artifacts/ com nome: {modelo}_{timestamp}.joblib
 - Hiperparametros e resultados de cada experimento logados no MLflow
 
+### Resampling (src/features/resampling.py)
+- Estrategia hibrida em 2 passos: RandomOverSampler para classes < 50 amostras, depois SMOTE para < target_minority
+- target_minority padrao = 3000 amostras por classe
+- k_neighbors do SMOTE ajustado automaticamente para evitar erro em classes muito raras
+- Ativado via flag --resample no train.py
+
+### Tuning (src/models/tuning.py)
+- Optuna com TPESampler, 50 trials por modelo (configuravel via --n-trials)
+- Usa subset estratificado de 150k amostras para velocidade
+- CV de 5 folds, metrica de otimizacao: Macro F1
+- Ativado via flag --tune no train.py
+
 ## Tracking de experimentos (MLflow)
 - Cada run de treino deve logar em MLflow: parametros, metricas e artefato do modelo
-- Tracking URI padrao: local (./mlruns) — sem servidor externo na V1
-- Experiment name segue o padrao: cicids2017/{fase} (ex: cicids2017/baselines, cicids2017/boosting)
+- Tracking URI: caminho absoluto via Path(__file__).resolve().parent / "mlruns" (evita encoding de espacos no Windows)
+- Experiment name segue o padrao: cicids2017/{fase}
+  - cicids2017/baselines — treino sem resampling
+  - cicids2017/phase2-resampling — treino com --resample
 - Logar obrigatoriamente: model_type, macro_f1, weighted_f1, accuracy, confusion_matrix (como artifact)
-- Modelo final registrado com mlflow.sklearn.log_model ou mlflow.xgboost.log_model
+- Modelo final registrado com mlflow.sklearn/xgboost/lightgbm.log_model conforme o tipo
 - reports/ continua existindo para exports estaticos (tabelas comparativas, plots finais)
 
 ## Convenções de teste
@@ -47,7 +61,33 @@ Foco: robustez, baixo falso positivo, bom recall em classes raras, pipeline repr
 - Branches: main, dev, feature/{nome}
 - Nunca commitar dados (data/), artefatos (artifacts/), mlruns/ ou checkpoints
 
+## Como rodar
+
+```bash
+# Criar venv e instalar dependencias
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[dev]"
+
+# Treino baseline (RF + XGBoost + LightGBM)
+python train.py
+
+# Treino com resampling SMOTE nas classes minoritarias
+python train.py --resample
+
+# Treino com resampling + tuning Optuna (lento, ~1-2h)
+python train.py --resample --tune --n-trials 50
+
+# Treinar apenas modelos especificos
+python train.py --models XGBoost LightGBM --resample
+
+# Visualizar experimentos no MLflow UI
+mlflow ui --backend-store-uri mlruns/
+```
+
 ## Ordem de trabalho (fases)
-1. Ingestao + limpeza + split -> baselines (LR, DT, RF)
-2. XGBoost + LightGBM + feature selection + resampling + tuning
-3. Ensemble final + API FastAPI + Dockerfile + relatorio
+1. [x] Ingestao + limpeza + split (src/data/loader.py)
+1. [x] Baselines RF + XGBoost (train.py) — Macro F1: RF=0.86, XGB=0.89
+2. [x] LightGBM + SMOTE seletivo + Optuna tuning (src/features/resampling.py, src/models/tuning.py)
+2. [ ] Feature selection com SHAP (src/features/selection.py)
+3. [ ] Ensemble final + API FastAPI + Dockerfile + relatorio
