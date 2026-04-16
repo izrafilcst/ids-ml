@@ -44,8 +44,10 @@ def print_report(y_true: np.ndarray, y_pred: np.ndarray, le: LabelEncoder) -> st
     """
     target_names = list(le.classes_)
     report = classification_report(y_true, y_pred, target_names=target_names, zero_division=0)
-    print(report)
-    return report
+    # Sanitiza para evitar erro de encoding no Windows
+    safe_report = report.encode("ascii", errors="replace").decode("ascii")
+    print(safe_report)
+    return safe_report
 
 
 def plot_confusion_matrix(

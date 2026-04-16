@@ -90,7 +90,6 @@ def apply_resampling(
         sampling_strategy=smote_strategy,
         k_neighbors=k,
         random_state=random_state,
-        n_jobs=-1,
     )
     X_res, y_res = smote.fit_resample(X, y)
 
@@ -109,6 +108,8 @@ def _print_resampling_summary(
     print("-" * 62)
     for idx in sorted(after.keys()):
         name = le.inverse_transform([idx])[0]
+        # Sanitiza nome para evitar erro de encoding no Windows
+        name = name.encode("ascii", errors="replace").decode("ascii")
         b = before.get(idx, 0)
         a = after[idx]
         delta = f"+{a - b}" if a > b else str(a - b)
