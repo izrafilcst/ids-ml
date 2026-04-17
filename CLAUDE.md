@@ -90,4 +90,7 @@ mlflow ui --backend-store-uri mlruns/
 1. [x] Baselines RF + XGBoost (train.py) — Macro F1: RF=0.86, XGB=0.89
 2. [x] LightGBM + SMOTE seletivo + Optuna tuning (src/features/resampling.py, src/models/tuning.py)
 2. [x] Feature selection com SHAP (src/features/selection.py)
-3. [ ] Ensemble final + API FastAPI + Dockerfile + relatorio
+3. [x] Ensemble final — Stacking RF + XGBoost + LightGBM (src/models/ensemble.py)
+3. [x] API FastAPI + predict.py CLI (src/api/)
+3. [ ] Dockerfile
+3. [ ] Relatorio final
