@@ -233,12 +233,16 @@ class ShapSelector:
         Returns:
             Series com importancia media absoluta por feature.
         """
-        if isinstance(shap_values, list):
-            # Multiclasse: lista de arrays (n_classes, n_samples, n_features)
-            stacked = np.stack([np.abs(sv).mean(axis=0) for sv in shap_values], axis=0)
+        sv = np.array(shap_values)
+        if sv.ndim == 3:
+            # Novo formato SHAP (>=0.46): (n_samples, n_features, n_classes)
+            importances = np.abs(sv).mean(axis=0).mean(axis=1)
+        elif isinstance(shap_values, list):
+            # Formato legado: lista de (n_samples, n_features), um por classe
+            stacked = np.stack([np.abs(s).mean(axis=0) for s in shap_values], axis=0)
             importances = stacked.mean(axis=0)
         else:
-            # Binario ou regressao: array (n_samples, n_features)
-            importances = np.abs(shap_values).mean(axis=0)
+            # Binario: (n_samples, n_features)
+            importances = np.abs(sv).mean(axis=0)
 
         return pd.Series(importances, index=feature_names)

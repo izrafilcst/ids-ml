@@ -43,7 +43,6 @@ class StackingEnsemble:
         self.meta_learner = meta_learner or LogisticRegression(
             C=1.0,
             max_iter=1000,
-            multi_class="multinomial",
             solver="lbfgs",
             n_jobs=-1,
             random_state=random_state,
