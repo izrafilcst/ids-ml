@@ -93,4 +93,4 @@ mlflow ui --backend-store-uri mlruns/
 3. [x] Ensemble final — Stacking RF + XGBoost + LightGBM (src/models/ensemble.py)
 3. [x] API FastAPI + predict.py CLI (src/api/)
 3. [x] Dockerfile
-3. [ ] Relatorio final
+3. [x] Relatorio final (reports/relatorio_final.md)

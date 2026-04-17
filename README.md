@@ -290,7 +290,7 @@ Resposta:
 - [x] **Fase 3** — Stacking Ensemble (`src/models/ensemble.py`)
 - [x] **Fase 3** — API FastAPI + CLI `predict.py` (`src/api/`)
 - [x] **Fase 3** — Dockerfile
-- [ ] **Fase 3** — Relatório final
+- [x] **Fase 3** — Relatório final (`reports/relatorio_final.md`)
 
 ---
 
