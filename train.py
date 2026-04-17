@@ -6,6 +6,7 @@ from pathlib import Path
 
 import joblib
 import mlflow
+import pandas as pd
 import mlflow.lightgbm
 import mlflow.sklearn
 import mlflow.xgboost
@@ -17,6 +18,7 @@ from xgboost import XGBClassifier
 from src.data.loader import load_dataset
 from src.evaluation.metrics import compute_metrics, plot_confusion_matrix, print_report
 from src.features.resampling import apply_resampling
+from src.features.selection import ShapSelector
 
 FIGURES_DIR = Path("reports/figures")
 ARTIFACTS_DIR = Path("artifacts")
@@ -90,6 +92,17 @@ def main() -> None:
         help="Numero de trials Optuna por modelo (default: 50)",
     )
     parser.add_argument(
+        "--select",
+        action="store_true",
+        help="Seleciona features via SHAP apos treinar o primeiro modelo (LightGBM ou XGBoost)",
+    )
+    parser.add_argument(
+        "--n-features",
+        type=int,
+        default=40,
+        help="Numero de features a manter com --select (default: 40)",
+    )
+    parser.add_argument(
         "--models",
         nargs="+",
         default=["RandomForest", "XGBoost", "LightGBM"],
@@ -115,6 +128,28 @@ def main() -> None:
         print("\nAplicando resampling nas classes minoritarias...")
         X_tr, y_train = apply_resampling(X_tr, y_train, le, random_state=args.random_state)
         print(f"Train apos resampling: {X_tr.shape}")
+
+    # --- Feature selection via SHAP ---
+    shap_selector: ShapSelector | None = None
+    if args.select:
+        print("\nExecutando feature selection via SHAP...")
+        # Treina um LightGBM leve apenas para calcular importancias SHAP
+        from lightgbm import LGBMClassifier as _LGBM
+
+        _probe = _LGBM(n_estimators=100, num_leaves=31, n_jobs=-1, random_state=args.random_state, verbose=-1)
+        _probe.fit(X_tr, y_train)
+
+        shap_selector = ShapSelector(n_features=args.n_features, random_state=args.random_state)
+        # Reconstroi DataFrame com colunas originais (necessario apos resampling que retorna ndarray)
+        X_tr_df = pd.DataFrame(X_tr, columns=X_train.columns)
+        X_te_df = X_test
+
+        shap_selector.fit(_probe, X_tr_df)
+        shap_selector.plot_importance(FIGURES_DIR / "shap_importance.png")
+
+        X_tr = shap_selector.transform(X_tr_df).values
+        X_te = shap_selector.transform(X_te_df).values
+        print(f"Features apos selecao SHAP: {X_tr.shape[1]}")
 
     num_classes = len(le.classes_)
 
@@ -214,6 +249,7 @@ def main() -> None:
     timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
 
     suffix = "_resampled" if args.resample else ""
+    suffix += "_selected" if args.select else ""
     model_path = ARTIFACTS_DIR / f"{best_name.lower()}{suffix}_{timestamp}.joblib"
     joblib.dump(best_model, model_path)
     print(f"Modelo salvo em {model_path}")
@@ -221,6 +257,11 @@ def main() -> None:
     le_path = ARTIFACTS_DIR / f"label_encoder_{timestamp}.joblib"
     joblib.dump(le, le_path)
     print(f"LabelEncoder salvo em {le_path}")
+
+    if shap_selector is not None:
+        selector_path = ARTIFACTS_DIR / f"shap_selector_{timestamp}.joblib"
+        joblib.dump(shap_selector, selector_path)
+        print(f"ShapSelector salvo em {selector_path}")
 
 
 if __name__ == "__main__":
