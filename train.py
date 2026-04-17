@@ -19,6 +19,7 @@ from src.data.loader import load_dataset
 from src.evaluation.metrics import compute_metrics, plot_confusion_matrix, print_report
 from src.features.resampling import apply_resampling
 from src.features.selection import ShapSelector
+from src.models.ensemble import build_stacking_ensemble, plot_base_model_contributions
 
 FIGURES_DIR = Path("reports/figures")
 ARTIFACTS_DIR = Path("artifacts")
@@ -108,6 +109,11 @@ def main() -> None:
         default=["RandomForest", "XGBoost", "LightGBM"],
         choices=["RandomForest", "XGBoost", "LightGBM"],
         help="Modelos a treinar",
+    )
+    parser.add_argument(
+        "--ensemble",
+        action="store_true",
+        help="Treina Stacking Ensemble (RF + XGBoost + LightGBM) apos os modelos base",
     )
     args = parser.parse_args()
 
@@ -236,9 +242,45 @@ def main() -> None:
 
             _log_model_mlflow(model, model_name)
 
+    # --- Stacking Ensemble (opcional) ---
+    stacking = None
+    if args.ensemble:
+        print(f"\n{'=' * 60}")
+        print("Treinando Stacking Ensemble...")
+        print(f"{'=' * 60}")
+
+        # Instancia modelos base frescos (serao retreinados internamente via OOF)
+        ensemble_base: dict[str, object] = {
+            "RandomForest": RandomForestClassifier(
+                n_estimators=200, max_depth=None, min_samples_split=5,
+                class_weight="balanced", n_jobs=-1, random_state=args.random_state,
+            ),
+            "XGBoost": XGBClassifier(**xgb_params),
+            "LightGBM": LGBMClassifier(**lgbm_params),
+        }
+
+        with mlflow.start_run(run_name="StackingEnsemble"):
+            mlflow.log_param("model_type", "StackingEnsemble")
+            mlflow.log_param("base_models", list(ensemble_base.keys()))
+            mlflow.log_param("meta_learner", "LogisticRegression")
+            mlflow.log_param("n_folds", 5)
+            mlflow.log_param("resampling", args.resample)
+            mlflow.log_param("n_features", X_tr.shape[1])
+
+            stacking = build_stacking_ensemble(ensemble_base, X_tr, y_train, le, random_state=args.random_state)
+            ensemble_metrics = _train_and_evaluate(stacking, "StackingEnsemble", X_tr, y_train, X_te, y_test, le)
+            results["StackingEnsemble"] = ensemble_metrics
+
+            mlflow.log_metrics(ensemble_metrics)
+            plot_base_model_contributions(stacking, le, FIGURES_DIR / "ensemble_contributions.png")
+            cm_path = FIGURES_DIR / "cm_stackingensemble.png"
+            if cm_path.exists():
+                mlflow.log_artifact(str(cm_path))
+            mlflow.sklearn.log_model(stacking, name="model")
+
     # --- Melhor modelo por Macro F1 ---
     best_name = max(results, key=lambda k: results[k]["macro_f1"])
-    best_model = models[best_name]
+    best_model = stacking if (best_name == "StackingEnsemble" and stacking is not None) else models[best_name]
     best_metrics = results[best_name]
 
     print(f"\n{'=' * 60}")
