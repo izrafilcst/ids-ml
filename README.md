@@ -155,6 +155,20 @@ uvicorn src.api.app:app --host 0.0.0.0 --port 8000
 # Docs interativas: http://localhost:8000/docs
 ```
 
+### Docker
+
+```bash
+# Build da imagem
+docker build -t ml-ids .
+
+# Rodar a API montando os artefatos treinados
+docker run -p 8000:8000 \
+    -v $(pwd)/artifacts:/app/artifacts \
+    ml-ids
+
+# Docs interativas: http://localhost:8000/docs
+```
+
 ### Experimentos no MLflow
 
 ```bash
@@ -275,7 +289,7 @@ Resposta:
 - [x] **Fase 2** — Feature selection com SHAP (`src/features/selection.py`)
 - [x] **Fase 3** — Stacking Ensemble (`src/models/ensemble.py`)
 - [x] **Fase 3** — API FastAPI + CLI `predict.py` (`src/api/`)
-- [ ] **Fase 3** — Dockerfile
+- [x] **Fase 3** — Dockerfile
 - [ ] **Fase 3** — Relatório final
 
 ---

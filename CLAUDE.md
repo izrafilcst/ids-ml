@@ -92,5 +92,5 @@ mlflow ui --backend-store-uri mlruns/
 2. [x] Feature selection com SHAP (src/features/selection.py)
 3. [x] Ensemble final — Stacking RF + XGBoost + LightGBM (src/models/ensemble.py)
 3. [x] API FastAPI + predict.py CLI (src/api/)
-3. [ ] Dockerfile
+3. [x] Dockerfile
 3. [ ] Relatorio final
