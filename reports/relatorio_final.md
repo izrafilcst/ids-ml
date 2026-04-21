@@ -114,41 +114,85 @@ O ensemble usa **out-of-fold predictions** para evitar leakage:
 
 > Critério de comparação: **Macro F1** (penaliza classes minoritárias não detectadas)
 
-### 4.1 Baselines (sem resampling)
+### 4.1 Baselines (sem resampling, 69 features)
 
 | Modelo | Accuracy | Macro F1 | Weighted F1 |
 |---|---|---|---|
-| RandomForest | — | **0.86** | — |
-| XGBoost | — | **0.89** | — |
+| RandomForest | 0.9985 | 0.8603 | 0.9985 |
+| XGBoost | 0.9989 | 0.8884 | 0.9988 |
+| LightGBM | 0.9988 | **0.9034** | 0.9988 |
 
-### 4.2 Com Resampling SMOTE
+### 4.2 Pipeline Completo (SMOTE + SHAP top-40 features)
 
-| Modelo | Macro F1 | Ganho vs. Baseline |
-|---|---|---|
-| LightGBM + SMOTE | — | — |
-| LightGBM + SMOTE + Optuna | — | — |
-
-> *Preencher com os valores do MLflow após execução de `python train.py --resample`.*
-
-### 4.3 Pipeline Completo (Resampling + SHAP + Ensemble)
-
-| Configuração | Macro F1 | Weighted F1 | Accuracy |
+| Modelo | Accuracy | Macro F1 | Weighted F1 |
 |---|---|---|---|
-| LightGBM + SMOTE + SHAP(40) | — | — | — |
-| Stacking + SMOTE + SHAP(40) | — | — | — |
+| XGBoost + SMOTE + SHAP(40) | 0.9986 | 0.8741 | 0.9987 |
+| LightGBM + SMOTE + SHAP(40) | 0.9986 | 0.8910 | 0.9987 |
+| **Stacking + SMOTE + SHAP(40)** | **0.9988** | **0.8875** | **0.9988** |
 
-> *Preencher com os valores do MLflow após execução de `python train.py --resample --select --ensemble`.*
+> Critério de comparação: **Macro F1**. O Stacking apresentou a melhor Accuracy e Weighted F1, enquanto o LightGBM individual liderou o Macro F1 — escolhido como artefato final por penalizar melhor as classes raras.
 
-### 4.4 Confusion Matrices
+### 4.3 Desempenho por classe — Pipeline Final (LightGBM + SMOTE + SHAP(40))
+
+| Classe | Precision | Recall | F1 | Support |
+|---|---|---|---|---|
+| Benign | 1.00 | 1.00 | 1.00 | 379.492 |
+| Bot | 0.63 | 0.88 | 0.73 | 288 |
+| DDoS | 1.00 | 1.00 | 1.00 | 25.603 |
+| DoS GoldenEye | 0.99 | 1.00 | 1.00 | 2.057 |
+| DoS Hulk | 1.00 | 1.00 | 1.00 | 34.570 |
+| DoS Slowhttptest | 0.94 | 0.99 | 0.97 | 1.046 |
+| DoS Slowloris | 1.00 | 1.00 | 1.00 | 1.077 |
+| FTP-Patator | 1.00 | 1.00 | 1.00 | 1.187 |
+| Heartbleed | 1.00 | 1.00 | 1.00 | 2 |
+| Infiltration | 0.86 | 0.86 | 0.86 | 7 |
+| PortScan | 0.90 | 0.94 | 0.92 | 392 |
+| SSH-Patator | 1.00 | 1.00 | 1.00 | 644 |
+| Web Attack Brute Force | 0.72 | 0.70 | 0.71 | 294 |
+| Web Attack Sql Injection | 0.67 | 1.00 | 0.80 | 4 |
+| Web Attack XSS | 0.36 | 0.42 | 0.39 | 130 |
+| **Macro avg** | **0.87** | **0.92** | **0.89** | 446.793 |
+
+### 4.4 Desempenho por classe — Stacking Ensemble
+
+| Classe | Precision | Recall | F1 | Support |
+|---|---|---|---|---|
+| Benign | 1.00 | 1.00 | 1.00 | 379.492 |
+| Bot | 0.77 | 0.73 | 0.75 | 288 |
+| DDoS | 1.00 | 1.00 | 1.00 | 25.603 |
+| DoS GoldenEye | 1.00 | 1.00 | 1.00 | 2.057 |
+| DoS Hulk | 1.00 | 1.00 | 1.00 | 34.570 |
+| DoS Slowhttptest | 0.96 | 0.99 | 0.97 | 1.046 |
+| DoS Slowloris | 1.00 | 1.00 | 1.00 | 1.077 |
+| FTP-Patator | 1.00 | 1.00 | 1.00 | 1.187 |
+| Heartbleed | 1.00 | 1.00 | 1.00 | 2 |
+| Infiltration | 1.00 | 0.57 | 0.73 | 7 |
+| PortScan | 0.92 | 0.96 | 0.94 | 392 |
+| SSH-Patator | 1.00 | 0.99 | 1.00 | 644 |
+| Web Attack Brute Force | 0.75 | 0.68 | 0.72 | 294 |
+| Web Attack Sql Injection | 0.67 | 1.00 | 0.80 | 4 |
+| Web Attack XSS | 0.39 | 0.46 | 0.42 | 130 |
+| **Macro avg** | **0.90** | **0.89** | **0.89** | 446.793 |
+
+### 4.5 Confusion Matrices
 
 #### RandomForest (baseline)
 ![Confusion Matrix RandomForest](figures/cm_randomforest.png)
 
-#### XGBoost (baseline)
+#### XGBoost
 ![Confusion Matrix XGBoost](figures/cm_xgboost.png)
 
-#### LightGBM
+#### LightGBM (modelo final)
 ![Confusion Matrix LightGBM](figures/cm_lightgbm.png)
+
+#### Stacking Ensemble
+![Confusion Matrix Stacking](figures/cm_stackingensemble.png)
+
+#### Feature Importance (SHAP — top 40)
+![SHAP Importance](figures/shap_importance.png)
+
+#### Contribuição dos modelos base no meta-learner
+![Ensemble Contributions](figures/ensemble_contributions.png)
 
 ---
 
@@ -166,10 +210,11 @@ O ensemble usa **out-of-fold predictions** para evitar leakage:
 
 | Limitação | Proposta |
 |---|---|
-| Métricas dos modelos Phase 2/3 pendentes de execução com dados reais | Executar `train.py --resample --select --ensemble` com os CSVs do CICIDS2017 |
-| Infiltration e Heartbleed com pouquíssimas amostras | Avaliar data augmentation com GANs ou CTGAN |
+| Web Attack XSS com F1=0.39 — classe difícil mesmo com SMOTE | Avaliar features específicas de payload HTTP ou CTGAN para geração sintética |
+| Infiltration com apenas 7 amostras no teste — métricas instáveis | Coletar mais dados reais ou usar validação cruzada estratificada por dia |
 | Ausência de validação temporal (cross-day) | Implementar split por dia para simular deploy real |
 | API sem autenticação | Adicionar Bearer token ou API key para deploy em produção |
+| Features do CICFlowMeter não disponíveis nativamente no Wazuh | Usar CICFlowMeter, nfstream ou conversor customizado antes de chamar a API |
 
 ---
 

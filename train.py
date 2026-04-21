@@ -268,7 +268,18 @@ def main() -> None:
             mlflow.log_param("n_features", X_tr.shape[1])
 
             stacking = build_stacking_ensemble(ensemble_base, X_tr, y_train, le, random_state=args.random_state)
-            ensemble_metrics = _train_and_evaluate(stacking, "StackingEnsemble", X_tr, y_train, X_te, y_test, le)
+
+            # Ensemble ja esta treinado — apenas avalia no holdout
+            print(f"\n{'=' * 60}\nAvaliando StackingEnsemble...\n{'=' * 60}")
+            y_pred_ens = stacking.predict(X_te)
+            ensemble_metrics = compute_metrics(y_test, y_pred_ens)
+            print(f"Accuracy:    {ensemble_metrics['accuracy']:.4f}")
+            print(f"Macro F1:    {ensemble_metrics['macro_f1']:.4f}")
+            print(f"Weighted F1: {ensemble_metrics['weighted_f1']:.4f}")
+            print()
+            print_report(y_test, y_pred_ens, le)
+            fig_path = FIGURES_DIR / "cm_stackingensemble.png"
+            plot_confusion_matrix(y_test, y_pred_ens, le, title="Confusion Matrix — StackingEnsemble", output_path=fig_path)
             results["StackingEnsemble"] = ensemble_metrics
 
             mlflow.log_metrics(ensemble_metrics)
