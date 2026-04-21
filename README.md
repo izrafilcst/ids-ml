@@ -7,13 +7,34 @@
 
 ## Resultados
 
+### Baselines (sem resampling, 69 features)
+
 | Modelo | Macro F1 | Weighted F1 | Accuracy |
 |---|---|---|---|
-| RandomForest (baseline) | 0.86 | — | — |
-| XGBoost (baseline) | 0.89 | — | — |
-| LightGBM + SMOTE + Optuna | *em andamento* | — | — |
+| RandomForest | 0.8603 | 0.9985 | 0.9985 |
+| XGBoost | 0.8884 | 0.9988 | 0.9989 |
+| LightGBM | **0.9034** | 0.9988 | 0.9988 |
 
-> Critério de comparação entre modelos: **Macro F1** (penaliza classes minoritárias não detectadas).
+### Pipeline completo (SMOTE + SHAP top-40 features)
+
+| Modelo | Macro F1 | Weighted F1 | Accuracy |
+|---|---|---|---|
+| XGBoost + SMOTE + SHAP(40) | 0.8741 | 0.9987 | 0.9986 |
+| LightGBM + SMOTE + SHAP(40) | **0.8910** | 0.9987 | 0.9986 |
+| Stacking Ensemble + SMOTE + SHAP(40) | 0.8875 | **0.9988** | **0.9988** |
+
+> Critério de comparação: **Macro F1** (penaliza classes minoritárias não detectadas).  
+> Modelo final: `LightGBM + SMOTE + SHAP(40)` — melhor Macro F1 geral.
+
+### Classes mais difíceis
+
+| Classe | F1 (LightGBM) | Observação |
+|---|---|---|
+| Web Attack XSS | 0.39 | Sobreposição de features com tráfego normal |
+| Bot | 0.73 | Comportamento variado |
+| Web Attack Brute Force | 0.71 | Confundido com tráfego legítimo de login |
+| Infiltration | 0.86 | Apenas 7 amostras no teste |
+| Heartbleed | 1.00 | SMOTE foi decisivo (11 amostras originais) |
 
 ---
 
